@@ -93,11 +93,7 @@ const DATA = {
         { time: "21h–22h", name: "🌜 Ceia", items: "Iogurte grego / 3 claras cozidas • Sem carb pesado", prot: 19, carb: 8, kcal: 200 },
       ]
     },
-    supplements: [
-      { time: "07h–08h", name: "B-Complex (B12)", dose: "1 cápsula", obs: "Com alimento" },
-      { time: "12h–13h", name: "Vitamina D3 + Berberina 500mg", dose: "2.000–4.000 UI + 500mg", obs: "Com gordura do almoço" },
-      { time: "21h30", name: "Whey 40g + Creatina 5g + Berberina", dose: "Shaker pós-treino", obs: "Com banana; até 30min após treino" },
-      { time: "22h–22h30", name: "Magnésio + Zinco + Ômega-3", dose: "300–400mg + 25–30mg + 3–4g", obs: "Com alimento (iogurte)" },
+    supplements:  + Ômega-3", dose: "300–400mg + 25–30mg + 3–4g", obs: "Com alimento (iogurte)" },
     ],
     alerts: [
       "🚫 ZERO açúcar adicionado — HOMA-IR 4,31 + HbA1c 5,8%",
@@ -181,12 +177,7 @@ const DATA = {
       { time: "19h–19h30", name: "Whey 25–30g + Creatina 3–5g", dose: "Shaker pós-treino", obs: "Com banana ao lado; até 30min após treino" },
       { time: "21h–22h", name: "Magnésio + Ashwagandha + Ômega-3", dose: "300–400mg + 300mg + 1–1,5g", obs: "Com alimento; melhor absorção" },
     ],
-    alerts: [
-      "🥩 Carne vermelha magra 3–4x/semana + fígado 1x/semana → Ferritina 35 → meta >60",
-      "🥝 Kiwi 1–2 unidades/dia → constipação (actinidina + fibra + sorbitol)",
-      "💧 Mínimo 2,5–3L de água/dia → TFG caindo + hidratação na corrida",
-      "🚫 ZERO açúcar adicionado → SHBG 79,8 elevado piora com açúcar",
-      "🌰 1 colher azeite EV em jejum → lubrifica intestino; prebiótico natural",
+    alerts: ",
     ]
   }
 };
@@ -304,8 +295,8 @@ function WorkoutLog({ profile, day }) {
         </div>
         <div className={`relative w-14 h-14 ring-2 ${accentRing} rounded-full flex items-center justify-center`}>
           <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 56 56">
-            <circle cx="28" cy="28" r="24" stroke="#1e293b" strokeWidth="4" fill="none"/>
-            <circle cx="28" cy="28" r="24" stroke={p.accent} strokeWidth="4" fill="none"
+            ircle cx="28" cy="28" r="24" stroke="#1e293b" strokeWidth="4" fill="none"/>
+            ircle cx="28" cy="28" r="24" stroke={p.accent} strokeWidth="4" fill="none"
               strokeDasharray={`${2*Math.PI*24}`} strokeDashoffset={`${2*Math.PI*24*(1-pct/100)}`}
               strokeLinecap="round" style={{transition:"stroke-dashoffset 0.3s"}}/>
           </svg>
@@ -414,160 +405,3 @@ function DietView({ profile, dayType }) {
                   <div className="text-slate-400 text-xs mt-1 leading-relaxed">{meal.items}</div>
                   {!isTraining && <div className="flex gap-3 mt-2 text-xs"><span className={accentText}>{meal.kcal} kcal</span><span className="text-orange-400">{meal.prot}g prot</span><span className="text-yellow-400">{meal.carb}g carb</span></div>}
                 </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function SupplementView({ profile }) {
-  const p = DATA[profile];
-  const [checked, setChecked] = useState({});
-  const accentText = p.color==="blue"?"text-blue-400":"text-pink-400";
-
-  useEffect(() => {
-    const saved = localStorage.getItem(getStorageKey(profile, "suppl"));
-    setChecked(saved ? JSON.parse(saved) : {});
-  }, [profile]);
-
-  const toggle = (idx) => {
-    setChecked(prev => {
-      const next = {...prev, [idx]: !prev[idx]};
-      localStorage.setItem(getStorageKey(profile, "suppl"), JSON.stringify(next));
-      return next;
-    });
-  };
-
-  return (
-    <div className="fade-in space-y-3">
-      <div className="text-xs text-slate-500 mb-1">⚠️ Discutir com médico antes de iniciar qualquer suplemento.</div>
-      {p.supplements.map((s, idx) => {
-        const done = !!checked[idx];
-        return (
-          <div key={idx} className={`rounded-xl border p-3 flex gap-3 transition-all duration-200 ${done?"border-green-600/40 bg-green-950/20":"border-slate-700 bg-slate-800/50"}`}>
-            <button onClick={()=>toggle(idx)}
-              className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${done?"bg-green-500 border-green-500":"border-slate-500 hover:border-green-400"}`}>
-              {done && <span className="text-white text-xs">✓</span>}
-            </button>
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-start gap-2">
-                <div className={`text-sm font-semibold ${done?"text-green-400":"text-white"}`}>{s.name}</div>
-                <div className={`text-xs flex-shrink-0 font-mono ${accentText}`}>{s.time}</div>
-              </div>
-              <div className="text-slate-400 text-xs mt-0.5">{s.dose}</div>
-              <div className="text-slate-500 text-xs italic">{s.obs}</div>
-            </div>
-          </div>
-        );
-      })}
-      <div className="space-y-2 mt-4">
-        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">🚨 Regras Inegociáveis</div>
-        {p.alerts.map((a,i)=>(
-          <div key={i} className="text-xs text-slate-400 bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700/50">{a}</div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function App() {
-  const [profile, setProfile] = useState("fabio");
-  const [tab, setTab] = useState("treino");
-  const [selectedDay, setSelectedDay] = useState(getTodayKey());
-  const [dietMode, setDietMode] = useState("treino");
-
-  const p = DATA[profile];
-  const sched = p.schedule[selectedDay];
-  const accentText = p.color==="blue"?"text-blue-400":"text-pink-400";
-  const accentBg = p.color==="blue"?"bg-blue-600":"bg-pink-600";
-  const accentBorder = p.color==="blue"?"border-blue-500/40":"border-pink-500/40";
-  const accentCardBg = p.color==="blue"?"bg-blue-600/10":"bg-pink-600/10";
-  const tabs = ["treino","dieta","suplementos"];
-  const tabLabels = { treino:"🏋️ Treino", dieta:"🥗 Dieta", suplementos:"💊 Suplementos" };
-
-  useEffect(() => { window.scrollTo(0,0); }, [profile, tab]);
-
-  const nextMeal = () => {
-    const now = new Date(); const cur = now.getHours()*60+now.getMinutes();
-    const dayType = sched.type==="rest"?"descanso":"treino";
-    const meals = p.meals[dayType];
-    return meals.find(m=>{const t=m.time.split("–")[0].replace("h",":");const[h,mm]=t.split(":").map(Number);return(h*60+(mm||0))>cur;})||meals[meals.length-1];
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-900 text-white pb-24">
-      <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800 px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <div className={`text-sm font-bold ${accentText}`}>Performance Tracker</div>
-            <div className="text-xs text-slate-500">{p.goal}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-slate-500">{new Date().toLocaleDateString("pt-BR",{weekday:"short",day:"numeric",month:"short"})}</div>
-            <div className={`text-xs font-semibold ${accentText}`}>{getTodayKey()} — Hoje</div>
-          </div>
-        </div>
-        <ProfileSwitch active={profile} onChange={setProfile} />
-      </div>
-
-      <div className="px-4 pt-4 space-y-4 max-w-2xl mx-auto">
-        <div className="grid grid-cols-4 gap-2">
-          <StatCard label="Peso" value={p.stats.peso} color={p.color}/>
-          <StatCard label="BF%" value={p.stats.bf} color={p.color}/>
-          <StatCard label="Altura" value={p.stats.altura} color={p.color}/>
-          <StatCard label="Meta" value={p.stats.meta} color={p.color}/>
-        </div>
-
-        <DaySelector profile={profile} selected={selectedDay} onSelect={setSelectedDay}/>
-
-        <div className={`rounded-xl border ${accentBorder} ${accentCardBg} p-4`}>
-          <div className="flex justify-between items-start">
-            <div>
-              <div className="text-xs text-slate-400">{selectedDay===getTodayKey()?"📅 Hoje":`📅 ${selectedDay}`}</div>
-              <div className={`text-lg font-bold ${accentText} mt-0.5`}>{sched.label}</div>
-              <div className="text-slate-300 text-sm">{sched.focus}</div>
-            </div>
-            <div className="text-4xl">{sched.type==="workout"?"🏋️":sched.type==="cardio"?"🏃":"😴"}</div>
-          </div>
-          <div className="mt-3 pt-3 border-t border-slate-700/50">
-            <div className="text-xs text-slate-400 mb-1">🥗 Próxima Refeição</div>
-            <div className="text-white text-sm font-medium">{nextMeal().time} — {nextMeal().name}</div>
-          </div>
-        </div>
-
-        <div className="flex rounded-xl bg-slate-800 p-1 gap-1">
-          {tabs.map(t=>(
-            <button key={t} onClick={()=>setTab(t)}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all duration-150 ${tab===t?`${accentBg} text-white`:"text-slate-400 hover:text-slate-200"}`}>
-              {tabLabels[t]}
-            </button>
-          ))}
-        </div>
-
-        {tab==="treino" && <WorkoutLog key={`${profile}_${selectedDay}`} profile={profile} day={selectedDay}/>}
-        {tab==="dieta" && (
-          <div className="space-y-3">
-            <div className="flex rounded-xl bg-slate-800 p-1 gap-1">
-              {["treino","descanso"].map(m=>(
-                <button key={m} onClick={()=>setDietMode(m)}
-                  className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${dietMode===m?`${accentBg} text-white`:"text-slate-400 hover:text-slate-200"}`}>
-                  {m==="treino"?"💪 Dia de Treino":"🛌 Dia de Descanso"}
-                </button>
-              ))}
-            </div>
-            <DietView key={`${profile}_${dietMode}`} profile={profile} dayType={dietMode}/>
-          </div>
-        )}
-        {tab==="suplementos" && <SupplementView key={profile} profile={profile}/>}
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
-</body>
-</html>
