@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Performance Tracker — Fábio & Thais</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <meta name="theme-color" content="#0f172a" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0f172a; font-family: 'Segoe UI', system-ui, sans-serif; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.25s ease-out; }
+    @keyframes checkPop { 0%{transform:scale(1);} 50%{transform:scale(1.3);} 100%{transform:scale(1);} }
+    .check-pop { animation: checkPop 0.2s ease-out; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const DATA = {
+  fabio: {
+    name: "Fábio", avatar: "💪", color: "blue", accent: "#3b82f6",
+    goal: "Recomposição Corporal + Testosterona",
+    stats: { peso: "100,4 kg", bf: "33,3%", altura: "173 cm", meta: "93–95 kg" },
+    schedule: {
+      "Segunda": { label: "🔴 Treino A", focus: "Peito + Tríceps", type: "workout", key: "A" },
+      "Terça":   { label: "🔵 Treino B", focus: "Costas + Bíceps", type: "workout", key: "B" },
+      "Quarta":  { label: "🏃 Cardio",   focus: "Zona 2 LISS — 35-40min", type: "cardio", key: null },
+      "Quinta":  { label: "🟢 Treino C", focus: "Pernas + Glúteo", type: "workout", key: "C" },
+      "Sexta":   { label: "🟡 Treino D", focus: "Ombro + Core", type: "workout", key: "D" },
+      "Sábado":  { label: "🏃 Cardio",   focus: "Zona 2 LISS — 30-40min", type: "cardio", key: null },
+      "Domingo": { label: "😴 Descanso", focus: "Mobilidade + Alongamento", type: "rest", key: null },
+    },
+    workouts: {
+      A: { name: "Treino A — Peito + Tríceps", exercises: [
+        { name: "Supino Reto c/ Halteres", equipment: "Par halteres", series: 4, reps: "8–12", rest: "75s", tip: "Descida 3s; cotovelo 45° do tronco" },
+        { name: "Supino Inclinado c/ Halteres", equipment: "Banco 30–45°", series: 3, reps: "8–12", rest: "75s", tip: "Proteger ombro D; cotovelo 45°" },
+        { name: "Crucifixo Máquina", equipment: "Peck-deck / Crossover", series: 3, reps: "12–15", rest: "60s", tip: "Amplitude máxima; não travar cotovelo" },
+        { name: "Tríceps Corda (Pulley)", equipment: "Corda; cotovelo fixo", series: 3, reps: "10–12", rest: "60s", tip: "Abrir a corda no final; extensão total" },
+        { name: "Tríceps Testa c/ Halteres", equipment: "Halteres uni/bilateral", series: 3, reps: "10", rest: "60s", tip: "Cotovelo apontado p/ cima; movimento limpo" },
+        { name: "🔥 Finalizador — Cardio Leve", equipment: "Bike / Esteira", series: 1, reps: "10 min", rest: "—", tip: "Zona 2 — FC 120–135 bpm; NÃO HIIT" },
+      ]},
+      B: { name: "Treino B — Costas + Bíceps", exercises: [
+        { name: "Puxada Frontal (Pulldown)", equipment: "Barra larga; pegada pronada", series: 4, reps: "8–12", rest: "75s", tip: "Sem carga axial; melhor que barra fixa p/ hérnia" },
+        { name: "Remada Curvada c/ Halteres", equipment: "Halteres; suporte no banco", series: 3, reps: "8–12", rest: "75s", tip: "Joelho + mão apoiados; NUNCA girar quadril" },
+        { name: "Remada Baixa (Máquina/Cabo)", equipment: "Sentado; triângulo", series: 3, reps: "10", rest: "60s", tip: "Sem hiperextensão lombar no retorno" },
+        { name: "Rosca Direta Barra EZ", equipment: "Barra EZ", series: 3, reps: "10–12", rest: "60s", tip: "Supinação completa; cotovelo fixo" },
+        { name: "Rosca Alternada c/ Halter", equipment: "Alternada; pegada neutra→sup.", series: 3, reps: "10", rest: "60s", tip: "Martelo→direta: trabalha braquial + bíceps" },
+        { name: "🔥 Finalizador — Abdominal", equipment: "Solo", series: 3, reps: "15 + 30s", rest: "45s", tip: "Crunch + prancha; expirar na contração" },
+      ]},
+      C: { name: "Treino C — Pernas + Glúteo", exercises: [
+        { name: "Leg Press 45°", equipment: "Pés paralelos, largura ombros", series: 4, reps: "10–12", rest: "90s", tip: "Substitui agachamento livre — protege hérnia lombar" },
+        { name: "Agachamento Goblet", equipment: "1 halter na frente", series: 3, reps: "10–12", rest: "75s", tip: "Tronco ereto; lombar neutra" },
+        { name: "Stiff c/ Halteres", equipment: "Halteres; joelho levemente flexo", series: 3, reps: "10", rest: "75s", tip: "Lombar RETA; quadril p/ trás; não arqueiar" },
+        { name: "Afundo Estático (Avanço)", equipment: "Halteres ou peso corporal", series: 3, reps: "10/perna", rest: "60s", tip: "Joelho traseiro quase no chão; tronco ereto" },
+        { name: "Cadeira Extensora", equipment: "Máquina", series: 2, reps: "15", rest: "45s", tip: "Aquecimento articular; amplitude controlada" },
+        { name: "Panturrilha em Pé", equipment: "Máquina ou step", series: 3, reps: "15", rest: "45s", tip: "Pausa no topo; controle na descida" },
+        { name: "🔥 Finalizador — HIIT Leve", equipment: "Bike estacionária", series: 1, reps: "10 min", rest: "—", tip: "⚠️ HIIT moderado — NÃO ultrapassar FC 160 bpm" },
+      ]},
+      D: { name: "Treino D — Ombro + Core", exercises: [
+        { name: "Desenvolvimento c/ Halteres", equipment: "Sentado; banco com encosto", series: 3, reps: "8–12", rest: "75s", tip: "Parar no paralelo se sentir dor ombro D" },
+        { name: "Elevação Lateral", equipment: "Halteres", series: 3, reps: "12", rest: "45s", tip: "Sem impulso lombar; 3s na descida" },
+        { name: "Elevação Frontal Alternada", equipment: "Halteres alternados", series: 3, reps: "10", rest: "45s", tip: "Parar na altura dos ombros; cotovelo semiflexo" },
+        { name: "Encolhimento c/ Halteres", equipment: "Halteres ao lado", series: 3, reps: "12", rest: "45s", tip: "Pausa no topo; melhor que barra p/ ombro" },
+        { name: "Prancha Isométrica", equipment: "Antebraço; solo", series: 3, reps: "30–60s", rest: "45s", tip: "Quadril paralelo ao chão; não prender respiração" },
+        { name: "Dead Bug", equipment: "Solo; alternado", series: 3, reps: "10/lado", rest: "45s", tip: "FUNDAMENTAL p/ hérnia lombar; lombar colada no chão" },
+        { name: "Crunch Bicicleta", equipment: "Solo", series: 3, reps: "15", rest: "45s", tip: "Lento e controlado; cotovelo→joelho oposto" },
+      ]}
+    },
+    meals: {
+      treino: [
+        { time: "07h–08h", name: "☀️ Café da Manhã", items: "3 ovos mexidos + 1 clara • Pão integral / tapioca + farinha coco • Fruta (maçã/pera/goiaba) • Café preto", prot: 26, carb: 48, kcal: 380 },
+        { time: "12h–13h", name: "🥗 Almoço", items: "Frango/peixe/carne magra 200g • Arroz integral + feijão/lentilha • Salada crua + legumes + azeite EV", prot: 50, carb: 53, kcal: 520 },
+        { time: "15h30–16h", name: "🍎 Lanche da Tarde", items: "Iogurte grego natural 200g • 2–3 castanhas-do-pará", prot: 19, carb: 9, kcal: 210 },
+        { time: "18h30–19h", name: "💪 Pré-Treino", items: "Frango ou peixe magro 150g • Batata-doce / arroz integral 150g • Salada verde leve", prot: 36, carb: 40, kcal: 390 },
+        { time: "20h–21h30", name: "🏋️ TREINO", items: "Água mínimo 500ml durante o treino", prot: 0, carb: 0, kcal: 0 },
+        { time: "21h30–22h", name: "🥛 Pós-Treino", items: "Whey Isolado 40g • Banana / arroz cozido 60g", prot: 38, carb: 28, kcal: 310 },
+        { time: "22h30–23h", name: "🌙 Ceia", items: "Iogurte grego natural / ovo cozido • ⚠️ Sem carboidratos pesados", prot: 19, carb: 8, kcal: 210 },
+      ],
+      descanso: [
+        { time: "07h–08h", name: "☀️ Café da Manhã", items: "3 ovos mexidos + 1 clara • Pão integral / tapioca • Fruta", prot: 26, carb: 48, kcal: 370 },
+        { time: "12h–13h", name: "🥗 Almoço", items: "Frango/peixe/carne magra 180–200g • Arroz integral + feijão • Salada + legumes + azeite", prot: 47, carb: 43, kcal: 490 },
+        { time: "15h30", name: "🍎 Lanche da Tarde", items: "Iogurte grego 200g • 2 castanhas-do-pará", prot: 20, carb: 10, kcal: 210 },
+        { time: "19h–20h", name: "🌙 Jantar", items: "Peixe (sardinha/tilápia/atum) 200g • Legumes cozidos/refogados • Azeite EV 1 colher", prot: 42, carb: 12, kcal: 350 },
+        { time: "21h–22h", name: "🌜 Ceia", items: "Iogurte grego / 3 claras cozidas • Sem carb pesado", prot: 19, carb: 8, kcal: 200 },
+      ]
+    },
+    supplements: [
+      { time: "07h–08h", name: "B-Complex (B12)", dose: "1 cápsula", obs: "Com alimento" },
+      { time: "12h–13h", name: "Vitamina D3 + Berberina 500mg", dose: "2.000–4.000 UI + 500mg", obs: "Com gordura do almoço" },
+      { time: "21h30", name: "Whey 40g + Creatina 5g + Berberina", dose: "Shaker pós-treino", obs: "Com banana; até 30min após treino" },
+      { time: "22h–22h30", name: "Magnésio + Zinco + Ômega-3", dose: "300–400mg + 25–30mg + 3–4g", obs: "Com alimento (iogurte)" },
+    ],
+    alerts: [
+      "🚫 ZERO açúcar adicionado — HOMA-IR 4,31 + HbA1c 5,8%",
+      "💧 Mínimo 3L de água/dia — Dapagliflozina aumenta perda urinária",
+      "☕ Sem cafeína após 16h — treino 20h + sono 7–8h",
+      "🚫 NÃO suplementar ferro — Ferritina 372 (elevada)",
+      "🚫 NÃO usar termogênicos — Hipertensão + Losartana",
+    ]
+  },
+  thais: {
+    name: "Thais", avatar: "🌸", color: "pink", accent: "#ec4899",
+    goal: "Emagrecimento + Hipertrofia + Corrida",
+    stats: { peso: "70 kg", bf: "~28–32%", altura: "1,70 m", meta: "64–66 kg" },
+    schedule: {
+      "Segunda": { label: "🔴 Treino A", focus: "Peito + Ombro + Tríceps", type: "workout", key: "A" },
+      "Terça":   { label: "🟣 Treino B", focus: "Glúteo + Posterior", type: "workout", key: "B" },
+      "Quarta":  { label: "🏃 Corrida + Core", focus: "35–40 min Zona 2", type: "cardio", key: null },
+      "Quinta":  { label: "🔵 Treino C", focus: "Costas + Bíceps + Core", type: "workout", key: "C" },
+      "Sexta":   { label: "🟢 Treino D", focus: "Quadríceps + Glúteo", type: "workout", key: "D" },
+      "Sábado":  { label: "🏃 Corrida Longa", focus: "40–50 min Zona 2", type: "cardio", key: null },
+      "Domingo": { label: "😴 Descanso Ativo", focus: "Mobilidade + Alongamento", type: "rest", key: null },
+    },
+    workouts: {
+      A: { name: "Treino A — Push (Peito + Ombro + Tríceps)", exercises: [
+        { name: "Supino Inclinado c/ Halter", equipment: "Par halteres — banco 30–45°", series: 4, reps: "8", rest: "75s", tip: "Amplitude livre; cotovelo 45° do tronco" },
+        { name: "Supino Máquina Convergente", equipment: "Máquina peck-deck", series: 3, reps: "10", rest: "75s", tip: "Volume adicional seguro" },
+        { name: "Desenvolvimento Sentado c/ Encosto", equipment: "Banco com encosto; halteres", series: 3, reps: "10", rest: "75s", tip: "Encosto PROTEGE lombar — escolha certa" },
+        { name: "Elevação Lateral Unilateral", equipment: "Halter; movimento controlado", series: 3, reps: "15", rest: "60s", tip: "3s na descida; sem impulso lombar" },
+        { name: "Tríceps Corda na Frente (Pulley)", equipment: "Pulley corda", series: 3, reps: "12", rest: "60s", tip: "Substitui corda acima da cabeça — reduz extensão lombar" },
+        { name: "Tríceps Mergulho Banco", equipment: "Banco; carga controlada", series: 3, reps: "12", rest: "60s", tip: "Ombro saudável; amplitude controlada" },
+        { name: "Dead Bug", equipment: "Solo; alternado braço/perna", series: 3, reps: "10/lado", rest: "45s", tip: "FUNDAMENTAL escoliose — lombar COLADA no chão" },
+      ]},
+      B: { name: "Treino B — Pernas Posterior + Glúteo", exercises: [
+        { name: "Stiff Unilateral Leve", equipment: "Halter unilateral; joelho semiflexo", series: 3, reps: "12", rest: "75s", tip: "Protege lombar assimétrica; substitui romeno pesado" },
+        { name: "Hip Thrust (Elevação Pélvica)", equipment: "Barra com colchão; banco", series: 4, reps: "10", rest: "75s", tip: "Melhor exercício glúteo; 2s de contração no topo" },
+        { name: "Cadeira Flexora Unilateral", equipment: "Máquina; unilateral", series: 3, reps: "12", rest: "60s", tip: "Corrige assimetrias; fundamental pós-escoliose" },
+        { name: "Agachamento Sumô c/ Halter Moderado", equipment: "1 halter; carga moderada", series: 3, reps: "10", rest: "75s", tip: "⚠️ NÃO pesado — banco abaixo como limitador" },
+        { name: "Cadeira Abdutora Inclinando Tronco", equipment: "Inclinação leve + 10 pulsos", series: 3, reps: "15+10", rest: "60s", tip: "Ativação superior do glúteo médio" },
+        { name: "Superman 4 Apoios", equipment: "Solo; amplitude MÍNIMA", series: 3, reps: "15", rest: "45s", tip: "Substitui extensão lombar; evita hiperextensão" },
+      ]},
+      C: { name: "Treino C — Pull (Costas + Bíceps)", exercises: [
+        { name: "Puxada na Frente Pegada Neutra", equipment: "Pulley; triângulo neutro", series: 4, reps: "8", rest: "75s", tip: "Pegada neutra = mais segura para ombro e coluna" },
+        { name: "Remada Unilateral c/ Halter Apoiada", equipment: "Halter; mão+joelho no banco", series: 3, reps: "10", rest: "75s", tip: "Apoio NEUTRALIZA a lombar — exercício ideal" },
+        { name: "Remada Baixa Triângulo", equipment: "Cabo; sentada", series: 3, reps: "12", rest: "60s", tip: "Não arredondar lombar no retorno" },
+        { name: "Pullover na Polia", equipment: "Polia alta; braços semi-estendidos", series: 3, reps: "12", rest: "60s", tip: "Grande dorsal sem carga espinhal" },
+        { name: "Rosca Direta Barra W", equipment: "Barra EZ ou W", series: 3, reps: "10", rest: "60s", tip: "Reduz tensão no cotovelo; supinação completa" },
+        { name: "Rosca Alternada Sentada", equipment: "Halteres; sentada", series: 3, reps: "10", rest: "60s", tip: "Sentado elimina balanço — boa técnica" },
+        { name: "Pallof Press (Anti-Rotação)", equipment: "Cabo; anti-rotação", series: 3, reps: "12/lado", rest: "45s", tip: "Substitui oblíquo c/ carga — ideal para escoliose" },
+      ]},
+      D: { name: "Treino D — Pernas Anterior + Funcional", exercises: [
+        { name: "Agachamento Goblet c/ Halter", equipment: "1 halter no peito", series: 4, reps: "10", rest: "90s", tip: "MELHOR p/ escoliose: carga anterior, coluna neutra" },
+        { name: "Agachamento Guiado Pés Médios", equipment: "Smith machine", series: 3, reps: "12", rest: "75s", tip: "⚠️ Nunca barra nas vértebras; preferir halter" },
+        { name: "Leg Press Juntos e Mais Baixos", equipment: "Leg press; pés no centro", series: 3, reps: "12", rest: "90s", tip: "Descarga axial da coluna; quadríceps eficiente" },
+        { name: "Afundo Reverso (Passo p/ Trás)", equipment: "Halteres ou peso corporal", series: 3, reps: "10/perna", rest: "60s", tip: "Mais seguro que avanço frontal; menor impacto lombar" },
+        { name: "Abdução em Pé na Polia", equipment: "Cabo; postura ereta", series: 3, reps: "15", rest: "45s", tip: "Glúteo médio funcional — essencial para corredora" },
+        { name: "Panturrilha em Pé Unilateral", equipment: "Máquina ou step", series: 4, reps: "15–20", rest: "45s", tip: "Unilateral corrige assimetrias; FUNDAMENTAL para corrida" },
+        { name: "Prancha Frontal + Prancha Lateral", equipment: "Solo; antebraço", series: 3, reps: "30–45s", rest: "45s", tip: "Fechar SEMPRE o treino — estabiliza escoliose" },
+      ]}
+    },
+    meals: {
+      treino: [
+        { time: "07h–08h", name: "☀️ Café da Manhã", items: "3 ovos mexidos + 1 clara • Pão integral + azeite • Fruta (maçã ou kiwi) • 1 col. azeite EV em jejum", prot: 25, carb: 41, kcal: 370 },
+        { time: "12h–13h", name: "🥗 Almoço", items: "Frango ou peixe 200g • Arroz integral + feijão • Salada verde + legumes + azeite", prot: 50, carb: 53, kcal: 490 },
+        { time: "15h30", name: "🍎 Lanche da Tarde", items: "Iogurte grego natural 200g • Castanha de caju ou amêndoas 20g", prot: 22, carb: 13, kcal: 240 },
+        { time: "17h30–18h", name: "💪 Pré-Treino", items: "Frango ou ovo cozido 150g • Batata-doce / banana", prot: 32, carb: 35, kcal: 330 },
+        { time: "18h–19h", name: "🏋️ TREINO", items: "Água mínimo 500ml durante o treino", prot: 0, carb: 0, kcal: 0 },
+        { time: "19h–19h30", name: "🥛 Pós-Treino", items: "Whey Isolado 30g • Fruta (banana ou maracujá)", prot: 27, carb: 28, kcal: 260 },
+        { time: "21h", name: "🌙 Jantar/Ceia", items: "Atum/sardinha/frango 200g • Vegetais refogados + azeite", prot: 42, carb: 12, kcal: 350 },
+      ],
+      descanso: [
+        { time: "07h–08h", name: "☀️ Café da Manhã", items: "3 ovos mexidos + 1 clara • Pão integral + azeite • Fruta (kiwi)", prot: 25, carb: 41, kcal: 360 },
+        { time: "12h–13h", name: "🥗 Almoço", items: "Frango ou peixe 200g • Arroz integral + feijão • Salada verde + legumes + azeite", prot: 50, carb: 53, kcal: 490 },
+        { time: "15h30", name: "🍎 Lanche da Tarde", items: "Iogurte grego natural 200g • Castanhas", prot: 22, carb: 13, kcal: 240 },
+        { time: "19h–20h", name: "🌙 Jantar", items: "Peixe (sardinha/atum) 200g • Vegetais + azeite", prot: 42, carb: 12, kcal: 340 },
+        { time: "21h", name: "🌜 Ceia Leve", items: "Iogurte grego / ovo cozido • Sem carb pesado", prot: 18, carb: 8, kcal: 180 },
+      ]
+    },
+    supplements: [
+      { time: "07h00", name: "Ferro Bisglicinato + Vit. C + B12 + Probiótico", dose: "18–25mg + 500mg + 1000mcg + 1 cáps.", obs: "Ferro + C em jejum; B12 e probiótico com alimento" },
+      { time: "12h–13h", name: "Vitamina D3 4000 UI + K2 + Ômega-3", dose: "4000 UI + 100mcg + 1–1,5g", obs: "Com gordura do almoço" },
+      { time: "19h–19h30", name: "Whey 25–30g + Creatina 3–5g", dose: "Shaker pós-treino", obs: "Com banana ao lado; até 30min após treino" },
+      { time: "21h–22h", name: "Magnésio + Ashwagandha + Ômega-3", dose: "300–400mg + 300mg + 1–1,5g", obs: "Com alimento; melhor absorção" },
+    ],
+    alerts: [
+      "🥩 Carne vermelha magra 3–4x/semana + fígado 1x/semana → Ferritina 35 → meta >60",
+      "🥝 Kiwi 1–2 unidades/dia → constipação (actinidina + fibra + sorbitol)",
+      "💧 Mínimo 2,5–3L de água/dia → TFG caindo + hidratação na corrida",
+      "🚫 ZERO açúcar adicionado → SHBG 79,8 elevado piora com açúcar",
+      "🌰 1 colher azeite EV em jejum → lubrifica intestino; prebiótico natural",
+    ]
+  }
+};
+
+const DAYS = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
+const DAY_SHORT = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
+
+function getTodayKey() {
+  const map = [6,0,1,2,3,4,5];
+  return DAYS[map[new Date().getDay()]];
+}
+function getStorageKey(profile, type) {
+  return `perf_${profile}_${type}_${new Date().toISOString().split('T')[0]}`;
+}
+
+function ProfileSwitch({ active, onChange }) {
+  return (
+    <div className="flex items-center justify-center gap-2 p-1 bg-slate-800 rounded-2xl">
+      {["fabio","thais"].map(p => (
+        <button key={p} onClick={() => onChange(p)}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${active===p ? (p==="fabio"?"bg-blue-600 text-white shadow-lg":"bg-pink-600 text-white shadow-lg") : "text-slate-400 hover:text-slate-200"}`}>
+          <span className="text-base">{DATA[p].avatar}</span>{DATA[p].name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StatCard({ label, value, color }) {
+  return (
+    <div className={`rounded-xl border p-3 text-center ${color==="blue"?"border-blue-500/30 bg-blue-950/40":"border-pink-500/30 bg-pink-950/40"}`}>
+      <div className="text-xs text-slate-400 mb-1">{label}</div>
+      <div className="text-sm font-bold text-white">{value}</div>
+    </div>
+  );
+}
+
+function DaySelector({ profile, selected, onSelect }) {
+  const schedule = DATA[profile].schedule;
+  const color = DATA[profile].color;
+  const typeColors = { workout:"text-orange-400", cardio:"text-green-400", rest:"text-slate-400" };
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      {DAYS.map((day, i) => {
+        const s = schedule[day];
+        const isToday = day === getTodayKey();
+        const isSel = day === selected;
+        return (
+          <button key={day} onClick={() => onSelect(day)}
+            className={`flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl border transition-all duration-150 ${isSel?(color==="blue"?"border-blue-500 bg-blue-900/60 text-white":"border-pink-500 bg-pink-900/60 text-white"):isToday?"border-slate-500 bg-slate-700/60 text-slate-200":"border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500"}`}>
+            <span className="text-xs font-medium">{DAY_SHORT[i]}</span>
+            <span className={`text-lg ${typeColors[s.type]}`}>{s.type==="workout"?"🏋️":s.type==="cardio"?"🏃":"😴"}</span>
+            {isToday && <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function WorkoutLog({ profile, day }) {
+  const p = DATA[profile];
+  const sched = p.schedule[day];
+  const [checked, setChecked] = useState({});
+  const [popAnim, setPopAnim] = useState({});
+
+  useEffect(() => {
+    const saved = localStorage.getItem(getStorageKey(profile, `workout_${day}`));
+    setChecked(saved ? JSON.parse(saved) : {});
+  }, [profile, day]);
+
+  const toggleSet = useCallback((exIdx, setIdx) => {
+    const key = `${exIdx}_${setIdx}`;
+    setChecked(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem(getStorageKey(profile, `workout_${day}`), JSON.stringify(next));
+      return next;
+    });
+    setPopAnim(prev => ({ ...prev, [key]: true }));
+    setTimeout(() => setPopAnim(prev => ({ ...prev, [key]: false })), 200);
+  }, [profile, day]);
+
+  if (!sched.key) {
+    return (
+      <div className="text-center py-12 fade-in">
+        <div className="text-5xl mb-3">{sched.type==="cardio"?"🏃":"😴"}</div>
+        <div className="text-white font-semibold text-lg">{sched.label}</div>
+        <div className="text-slate-400 text-sm mt-1">{sched.focus}</div>
+        {sched.type==="cardio" && (
+          <div className="mt-4 mx-auto max-w-xs bg-slate-800 rounded-xl p-4 text-left">
+            <div className="text-green-400 font-semibold text-sm mb-2">📋 Protocolo do Dia</div>
+            <div className="text-slate-300 text-sm">• Zona 2 — FC 120–140 bpm</div>
+            <div className="text-slate-300 text-sm">• {sched.focus}</div>
+            <div className="text-slate-300 text-sm">• Ritmo confortável — consegue conversar</div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const workout = p.workouts[sched.key];
+  const totalSets = workout.exercises.reduce((a,e) => a+e.series, 0);
+  const doneSets = Object.values(checked).filter(Boolean).length;
+  const pct = totalSets > 0 ? Math.round((doneSets/totalSets)*100) : 0;
+  const accentBg = p.color==="blue"?"bg-blue-600":"bg-pink-600";
+  const accentText = p.color==="blue"?"text-blue-400":"text-pink-400";
+  const accentRing = p.color==="blue"?"ring-blue-500":"ring-pink-500";
+
+  return (
+    <div className="fade-in space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className={`text-sm font-bold ${accentText}`}>{workout.name}</div>
+          <div className="text-slate-400 text-xs">{doneSets}/{totalSets} séries concluídas</div>
+        </div>
+        <div className={`relative w-14 h-14 ring-2 ${accentRing} rounded-full flex items-center justify-center`}>
+          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 56 56">
+            <circle cx="28" cy="28" r="24" stroke="#1e293b" strokeWidth="4" fill="none"/>
+            <circle cx="28" cy="28" r="24" stroke={p.accent} strokeWidth="4" fill="none"
+              strokeDasharray={`${2*Math.PI*24}`} strokeDashoffset={`${2*Math.PI*24*(1-pct/100)}`}
+              strokeLinecap="round" style={{transition:"stroke-dashoffset 0.3s"}}/>
+          </svg>
+          <span className="text-xs font-bold text-white z-10">{pct}%</span>
+        </div>
+      </div>
+      {workout.exercises.map((ex, exIdx) => {
+        const exDone = Array.from({length:ex.series},(_,i)=>checked[`${exIdx}_${i}`]).filter(Boolean).length;
+        const isFullDone = exDone===ex.series;
+        return (
+          <div key={exIdx} className={`rounded-xl border transition-all duration-200 ${isFullDone?"border-green-600/50 bg-green-950/20":"border-slate-700 bg-slate-800/50"}`}>
+            <div className="p-3 pb-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <div className={`font-semibold text-sm ${isFullDone?"text-green-400":"text-white"}`}>{isFullDone?"✅ ":""}{ex.name}</div>
+                  <div className="text-slate-400 text-xs mt-0.5">{ex.equipment}</div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-xs text-slate-300 font-medium">{ex.reps} reps</div>
+                  <div className="text-xs text-slate-500">⏱ {ex.rest}</div>
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-slate-500 italic">💡 {ex.tip}</div>
+            </div>
+            <div className="px-3 pb-3">
+              <div className="text-xs text-slate-500 mb-1.5">Marcar séries:</div>
+              <div className="flex gap-2 flex-wrap">
+                {Array.from({length:ex.series},(_,setIdx)=>{
+                  const key=`${exIdx}_${setIdx}`;
+                  const done=!!checked[key];
+                  return (
+                    <button key={setIdx} onClick={()=>toggleSet(exIdx,setIdx)}
+                      className={`w-9 h-9 rounded-lg text-sm font-bold transition-all duration-150 border ${done?`${accentBg} border-transparent text-white ${popAnim[key]?"check-pop":""}` :"border-slate-600 bg-slate-700/50 text-slate-400 hover:border-slate-400"}`}>
+                      {done?"✓":setIdx+1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {pct===100 && (
+        <div className="text-center py-6 rounded-xl border border-green-500/40 bg-green-950/20">
+          <div className="text-4xl mb-2">🎯</div>
+          <div className="text-green-400 font-bold">Treino Concluído!</div>
+          <div className="text-slate-400 text-sm mt-1">Excelente trabalho hoje 💪</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DietView({ profile, dayType }) {
+  const p = DATA[profile];
+  const meals = p.meals[dayType];
+  const [checked, setChecked] = useState({});
+  const accentBg = p.color==="blue"?"bg-blue-600/20 border-blue-500/30":"bg-pink-600/20 border-pink-500/30";
+  const accentText = p.color==="blue"?"text-blue-400":"text-pink-400";
+
+  useEffect(() => {
+    const saved = localStorage.getItem(getStorageKey(profile, `diet_${dayType}`));
+    setChecked(saved ? JSON.parse(saved) : {});
+  }, [profile, dayType]);
+
+  const toggleMeal = (idx) => {
+    setChecked(prev => {
+      const next = {...prev, [idx]: !prev[idx]};
+      localStorage.setItem(getStorageKey(profile, `diet_${dayType}`), JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const totalKcal = meals.reduce((a,m)=>a+m.kcal,0);
+  const totalProt = meals.reduce((a,m)=>a+m.prot,0);
+  const totalCarb = meals.reduce((a,m)=>a+m.carb,0);
+
+  return (
+    <div className="fade-in space-y-3">
+      <div className={`rounded-xl border p-3 ${accentBg}`}>
+        <div className="text-xs text-slate-400 mb-2">📊 Totais do Dia</div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div><div className={`text-base font-bold ${accentText}`}>{totalKcal}</div><div className="text-xs text-slate-500">kcal</div></div>
+          <div><div className="text-base font-bold text-orange-400">{totalProt}g</div><div className="text-xs text-slate-500">proteína</div></div>
+          <div><div className="text-base font-bold text-yellow-400">{totalCarb}g</div><div className="text-xs text-slate-500">carb</div></div>
+        </div>
+      </div>
+      {meals.map((meal, idx) => {
+        const done = !!checked[idx];
+        const isTraining = meal.kcal===0;
+        return (
+          <div key={idx} className={`rounded-xl border transition-all duration-200 ${done?"border-green-600/40 bg-green-950/20":isTraining?"border-orange-500/30 bg-orange-950/10":"border-slate-700 bg-slate-800/50"}`}>
+            <div className="p-3">
+              <div className="flex items-start gap-3">
+                {!isTraining && (
+                  <button onClick={()=>toggleMeal(idx)}
+                    className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${done?"bg-green-500 border-green-500":"border-slate-500 hover:border-green-400"}`}>
+                    {done && <span className="text-white text-xs">✓</span>}
+                  </button>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className={`font-semibold text-sm ${done?"text-green-400":isTraining?"text-orange-400":"text-white"}`}>{meal.name}</div>
+                    <div className="text-xs text-slate-500 flex-shrink-0">{meal.time}</div>
+                  </div>
+                  <div className="text-slate-400 text-xs mt-1 leading-relaxed">{meal.items}</div>
+                  {!isTraining && <div className="flex gap-3 mt-2 text-xs"><span className={accentText}>{meal.kcal} kcal</span><span className="text-orange-400">{meal.prot}g prot</span><span className="text-yellow-400">{meal.carb}g carb</span></div>}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SupplementView({ profile }) {
+  const p = DATA[profile];
+  const [checked, setChecked] = useState({});
+  const accentText = p.color==="blue"?"text-blue-400":"text-pink-400";
+
+  useEffect(() => {
+    const saved = localStorage.getItem(getStorageKey(profile, "suppl"));
+    setChecked(saved ? JSON.parse(saved) : {});
+  }, [profile]);
+
+  const toggle = (idx) => {
+    setChecked(prev => {
+      const next = {...prev, [idx]: !prev[idx]};
+      localStorage.setItem(getStorageKey(profile, "suppl"), JSON.stringify(next));
+      return next;
+    });
+  };
+
+  return (
+    <div className="fade-in space-y-3">
+      <div className="text-xs text-slate-500 mb-1">⚠️ Discutir com médico antes de iniciar qualquer suplemento.</div>
+      {p.supplements.map((s, idx) => {
+        const done = !!checked[idx];
+        return (
+          <div key={idx} className={`rounded-xl border p-3 flex gap-3 transition-all duration-200 ${done?"border-green-600/40 bg-green-950/20":"border-slate-700 bg-slate-800/50"}`}>
+            <button onClick={()=>toggle(idx)}
+              className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${done?"bg-green-500 border-green-500":"border-slate-500 hover:border-green-400"}`}>
+              {done && <span className="text-white text-xs">✓</span>}
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-start gap-2">
+                <div className={`text-sm font-semibold ${done?"text-green-400":"text-white"}`}>{s.name}</div>
+                <div className={`text-xs flex-shrink-0 font-mono ${accentText}`}>{s.time}</div>
+              </div>
+              <div className="text-slate-400 text-xs mt-0.5">{s.dose}</div>
+              <div className="text-slate-500 text-xs italic">{s.obs}</div>
+            </div>
+          </div>
+        );
+      })}
+      <div className="space-y-2 mt-4">
+        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">🚨 Regras Inegociáveis</div>
+        {p.alerts.map((a,i)=>(
+          <div key={i} className="text-xs text-slate-400 bg-slate-800/50 rounded-lg px-3 py-2 border border-slate-700/50">{a}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [profile, setProfile] = useState("fabio");
+  const [tab, setTab] = useState("treino");
+  const [selectedDay, setSelectedDay] = useState(getTodayKey());
+  const [dietMode, setDietMode] = useState("treino");
+
+  const p = DATA[profile];
+  const sched = p.schedule[selectedDay];
+  const accentText = p.color==="blue"?"text-blue-400":"text-pink-400";
+  const accentBg = p.color==="blue"?"bg-blue-600":"bg-pink-600";
+  const accentBorder = p.color==="blue"?"border-blue-500/40":"border-pink-500/40";
+  const accentCardBg = p.color==="blue"?"bg-blue-600/10":"bg-pink-600/10";
+  const tabs = ["treino","dieta","suplementos"];
+  const tabLabels = { treino:"🏋️ Treino", dieta:"🥗 Dieta", suplementos:"💊 Suplementos" };
+
+  useEffect(() => { window.scrollTo(0,0); }, [profile, tab]);
+
+  const nextMeal = () => {
+    const now = new Date(); const cur = now.getHours()*60+now.getMinutes();
+    const dayType = sched.type==="rest"?"descanso":"treino";
+    const meals = p.meals[dayType];
+    return meals.find(m=>{const t=m.time.split("–")[0].replace("h",":");const[h,mm]=t.split(":").map(Number);return(h*60+(mm||0))>cur;})||meals[meals.length-1];
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-white pb-24">
+      <div className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800 px-4 pt-4 pb-3">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className={`text-sm font-bold ${accentText}`}>Performance Tracker</div>
+            <div className="text-xs text-slate-500">{p.goal}</div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-slate-500">{new Date().toLocaleDateString("pt-BR",{weekday:"short",day:"numeric",month:"short"})}</div>
+            <div className={`text-xs font-semibold ${accentText}`}>{getTodayKey()} — Hoje</div>
+          </div>
+        </div>
+        <ProfileSwitch active={profile} onChange={setProfile} />
+      </div>
+
+      <div className="px-4 pt-4 space-y-4 max-w-2xl mx-auto">
+        <div className="grid grid-cols-4 gap-2">
+          <StatCard label="Peso" value={p.stats.peso} color={p.color}/>
+          <StatCard label="BF%" value={p.stats.bf} color={p.color}/>
+          <StatCard label="Altura" value={p.stats.altura} color={p.color}/>
+          <StatCard label="Meta" value={p.stats.meta} color={p.color}/>
+        </div>
+
+        <DaySelector profile={profile} selected={selectedDay} onSelect={setSelectedDay}/>
+
+        <div className={`rounded-xl border ${accentBorder} ${accentCardBg} p-4`}>
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="text-xs text-slate-400">{selectedDay===getTodayKey()?"📅 Hoje":`📅 ${selectedDay}`}</div>
+              <div className={`text-lg font-bold ${accentText} mt-0.5`}>{sched.label}</div>
+              <div className="text-slate-300 text-sm">{sched.focus}</div>
+            </div>
+            <div className="text-4xl">{sched.type==="workout"?"🏋️":sched.type==="cardio"?"🏃":"😴"}</div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-700/50">
+            <div className="text-xs text-slate-400 mb-1">🥗 Próxima Refeição</div>
+            <div className="text-white text-sm font-medium">{nextMeal().time} — {nextMeal().name}</div>
+          </div>
+        </div>
+
+        <div className="flex rounded-xl bg-slate-800 p-1 gap-1">
+          {tabs.map(t=>(
+            <button key={t} onClick={()=>setTab(t)}
+              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all duration-150 ${tab===t?`${accentBg} text-white`:"text-slate-400 hover:text-slate-200"}`}>
+              {tabLabels[t]}
+            </button>
+          ))}
+        </div>
+
+        {tab==="treino" && <WorkoutLog key={`${profile}_${selectedDay}`} profile={profile} day={selectedDay}/>}
+        {tab==="dieta" && (
+          <div className="space-y-3">
+            <div className="flex rounded-xl bg-slate-800 p-1 gap-1">
+              {["treino","descanso"].map(m=>(
+                <button key={m} onClick={()=>setDietMode(m)}
+                  className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${dietMode===m?`${accentBg} text-white`:"text-slate-400 hover:text-slate-200"}`}>
+                  {m==="treino"?"💪 Dia de Treino":"🛌 Dia de Descanso"}
+                </button>
+              ))}
+            </div>
+            <DietView key={`${profile}_${dietMode}`} profile={profile} dayType={dietMode}/>
+          </div>
+        )}
+        {tab==="suplementos" && <SupplementView key={profile} profile={profile}/>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
