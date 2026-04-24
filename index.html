@@ -743,9 +743,7 @@ function App() {
 
 // Determina se o dia selecionado é de treino ou descanso
 const tipoDia = p.rotina[diaSel].tipo === "treino" ? "treino" : "descanso";
-  // Determina se o dia selecionado é de treino ou descanso (para a aba de dieta)
-  const tipoDia = p.rotina[diaSel].tipo === "treino" ? "treino" : "descanso";
-
+  
   // Abas de navegação inferiores
   const abas = [
     { id: "treino",       icone: "🏋️", rotulo: "Treino"       },
@@ -757,20 +755,6 @@ const tipoDia = p.rotina[diaSel].tipo === "treino" ? "treino" : "descanso";
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col max-w-md mx-auto">
-      {<div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800 px-4 pt-4 pb-3 space-y-3">
-  
-  {/* Botões de Export/Import */}
-  <div className="flex items-center justify-end gap-2">
-    <button onClick={exportData} className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-medium text-white transition-all">
-      ⬇️ Exportar
-    </button>
-    <label className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-medium text-white transition-all cursor-pointer">
-      ⬆️ Importar
-      <input type="file" accept=".json" onChange={importData} className="hidden" />
-    </label>
-  </div>
-  
-  <AlternadorPerfil ativo={perfilAtivo} aoMudar={setPerfilAtivo} />}
       <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800 px-4 pt-4 pb-3 space-y-3">
         
         <AlternadorPerfil ativo={perfilAtivo} aoMudar={setPerfilAtivo} />
@@ -804,6 +788,11 @@ const tipoDia = p.rotina[diaSel].tipo === "treino" ? "treino" : "descanso";
               <span className="mt-0.5">{aba.rotulo}</span>
             </button>
           ))}
+        </div>
+                {/* Botões de Export/Import */}
+        <div className="flex items-center justify-end gap-2 pt-1">
+          <button onClick={exportData} className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-medium text-white transition-all">⬆️ Exportar</button>
+          <label className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-medium text-white transition-all cursor-pointer">⬇️ Importar<input type="file" accept=".json" onChange={importData} className="hidden" /></label>
         </div>
       </div>
 
