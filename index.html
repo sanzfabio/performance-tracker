@@ -264,9 +264,9 @@ function AlternadorPerfil({ ativo, aoMudar }) {
 // ─── Componente: Card de Estatística ─────────────────────────────────────────
 function CardEstatistica({ rotulo, valor, cor }) {
   return (
-    <div className={`rounded-xl border p-3 text-center ${CORES_PERFIL[cor].card}`}>
+    <div className={`rounded-xl border p-2 text-center ${CORES_PERFIL[cor].card}`}>
       <div className="text-xs text-slate-400 mb-1">{rotulo}</div>
-      <div className="text-sm font-bold text-white">{valor}</div>
+      <div className="text-xs font-bold text-white">{valor}</div>
     </div>
   );
 }
@@ -285,14 +285,14 @@ function SeletorDia({ perfil, diaSelecionado, aoSelecionar }) {
           <button
             key={dia}
             onClick={() => aoSelecionar(dia)}
-            className={`flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl border transition-all duration-150 ${
+            className={`flex-shrink-0 flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl border transition-all duration-150 ${
               ehSel   ? CORES_PERFIL[cor].diaAtivo
               : ehHoje ? "border-slate-500 bg-slate-700/60 text-slate-200"
               :          "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500"
             }`}
           >
             <span className="text-xs font-medium">{DIAS_ABR[i]}</span>
-            <span className={`text-lg ${COR_TIPO[entrada.tipo]}`}>{ICONE_TIPO[entrada.tipo]}</span>
+            <span className={`text-sm ${COR_TIPO[entrada.tipo]}`}>{ICONE_TIPO[entrada.tipo]}</span>
             {ehHoje && <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>}
           </button>
         );
