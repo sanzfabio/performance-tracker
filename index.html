@@ -304,7 +304,7 @@ function WorkoutLog({ profile, day }) {
           <div className="text-slate-400 text-xs">{doneSets}/{totalSets} séries concluídas</div>
         </div>
         <div className={`relative w-14 h-14 ring-2 ${accentRing} rounded-full flex items-center justify-center`}>
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 56 56">
+           <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 56 56">
             ircle cx="28" cy="28" r="24" stroke="#1e293b" strokeWidth="4" fill="none"/>
             ircle cx="28" cy="28" r="24" stroke={p.accent} strokeWidth="4" fill="none"
               strokeDasharray={`${2*Math.PI*24}`} strokeDashoffset={`${2*Math.PI*24*(1-pct/100)}`}
