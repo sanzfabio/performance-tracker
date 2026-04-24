@@ -225,7 +225,7 @@ const DIAS     = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Doming
 const DIAS_ABR = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
 
 // Emojis por tipo de atividade
-const ICONE_TIPO = { treino: "🏋️", cardio: "🏃", descanso: "😴" };
+const ICONE_TIPO = { treino:"🏋️ Treino", dieta:"🥗 Dieta", suplementos:"💊 Suplementos", habitos:"📊 Hábitos" };
 
 // Cor de texto por tipo de atividade
 const COR_TIPO = { treino: "text-orange-400", cardio: "text-green-400", descanso: "text-slate-400" };
@@ -556,7 +556,139 @@ function VisualizacaoAlertas({ perfil }) {
     </div>
   );
 }
+// ===== Componente Habit Tracker =====
+function HabitTracker({ perfil }) {
+  const p = DADOS[perfil];
+  const [habits, setHabits] = useState({});
+  const cor = CORES_PERFIL[perfil];
+  
+  const HABIT_CONFIG = [
+    { key: "treino", label: "🏋️ Treino realizado", meta: "4-5x/sem", type: "check" },
+    { key: "cardio", label: "🏃 Cardio realizado", meta: "2x/sem", type: "check" },
+    { key: "sono", label: "😴 Qualidade do sono (1-10)", meta: "≥ 7", type: "number", max: 10 },
+    { key: "disposicao", label: "⚡ Disposição pré-treino (1-10)", meta: "≥ 7", type: "number", max: 10 },
+    { key: "estresse", label: "😌 Nível de estresse (1-10)", meta: "≤ 4", type: "number", max: 10 },
+    { key: "dieta", label: "🥗 Aderência à dieta (%)", meta: "≥ 90%", type: "number", max: 100 },
+  ];
 
+  useEffect(() => {
+    const saved = localStorage.getItem(gerarChaveStorage(perfil, "habits"));
+    setHabits(saved ? JSON.parse(saved) : {});
+  }, [perfil]);
+
+  const getWeekDates = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    
+    return Array.from({length: 7}, (_, i) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      return date.toISOString().split('T')[0];
+    });
+  };
+
+  const weekDates = getWeekDates();
+  const today = new Date().toISOString().split('T')[0];
+
+  const toggleHabit = (habitKey, date) => {
+    setHabits(prev => {
+      const key = `${date}_${habitKey}`;
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem(gerarChaveStorage(perfil, "habits"), JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const setHabitValue = (habitKey, date, value) => {
+    setHabits(prev => {
+      const key = `${date}_${habitKey}`;
+      const next = { ...prev, [key]: value };
+      localStorage.setItem(gerarChaveStorage(perfil, "habits"), JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const getStreak = (habitKey) => {
+    let streak = 0;
+    const sortedDates = weekDates.slice().reverse();
+    for (const date of sortedDates) {
+      const key = `${date}_${habitKey}`;
+      if (habits[key]) streak++;
+      else break;
+    }
+    return streak;
+  };
+
+  return (
+    <div className="fade-in space-y-4">
+      <div className={`rounded-xl border p-4 ${cor.destaque}`}>
+        <div className="text-xs text-slate-400 mb-2">📅 Semana atual</div>
+        <div className="grid grid-cols-7 gap-1 text-center text-xs mb-1">
+          {["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"].map((day, i) => (
+            <div key={i} className={weekDates[i]===today?"text-green-400 font-bold":"text-slate-500"}>{day}</div>
+          ))}
+        </div>
+      </div>
+
+      {HABIT_CONFIG.map(habit => {
+        const streak = getStreak(habit.key);
+        return (
+          <div key={habit.key} className="rounded-xl border border-slate-700 bg-slate-800/50 p-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-white">{habit.label}</div>
+                <div className="text-xs text-slate-500">Meta: {habit.meta}</div>
+              </div>
+              {streak > 0 && (
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${cor.fundo}/20 border ${cor.borda}`}>
+                  <span className="text-lg">🔥</span>
+                  <span className={`text-sm font-bold ${cor.texto}`}>{streak}d</span>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-7 gap-2">
+              {weekDates.map((date, i) => {
+                const key = `${date}_${habit.key}`;
+                const value = habits[key];
+                const isToday = date === today;
+                
+                if (habit.type === "number") {
+                  return (
+                    <input
+                      key={i}
+                      type="number"
+                      min="0"
+                      max={habit.max}
+                      value={value || ""}
+                      onChange={(e) => setHabitValue(habit.key, date, e.target.value)}
+                      className={`w-full h-10 text-center text-sm font-bold rounded-lg border ${isToday?"ring-2 ring-green-400":""} ${value?`${cor.fundo} border-transparent text-white`:"border-slate-600 bg-slate-700/50 text-slate-400"}`}
+                      placeholder="-"
+                    />
+                  );
+                }
+                
+                return (
+                  <button
+                    key={i}
+                    onClick={() => toggleHabit(habit.key, date)}
+                    className={`h-10 rounded-lg border transition-all ${isToday?"ring-2 ring-green-400":""} ${value?`${cor.fundo} border-transparent text-white`:"border-slate-600 bg-slate-700/50 text-slate-400 hover:border-slate-400"}`}
+                  >
+                    {value ? "✓" : ""}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ===== Componente Principal: App =====
+function App() {
 // ─── Componente Principal: App ────────────────────────────────────────────────
 function App() {
   // Perfil ativo: "fabio" ou "thais"
@@ -570,7 +702,49 @@ function App() {
 
   const p   = DADOS[perfilAtivo];
   const cor = CORES_PERFIL[perfilAtivo];
+  
+  // Funções de Export/Import de dados
+  const exportData = () => {
+    const allData = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith('perf_')) {
+        allData[key] = localStorage.getItem(key);
+      }
+    }
+    const dataStr = JSON.stringify(allData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `performance_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
+  const importData = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        Object.keys(data).forEach(key => {
+          localStorage.setItem(key, data[key]);
+        });
+        alert('✅ Dados importados com sucesso! Recarregue a página.');
+        window.location.reload();
+      } catch (err) {
+        alert('❌ Erro ao importar arquivo. Verifique o formato.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+// Determina se o dia selecionado é de treino ou descanso
+const tipoDia = p.rotina[diaSel].tipo === "treino" ? "treino" : "descanso";
   // Determina se o dia selecionado é de treino ou descanso (para a aba de dieta)
   const tipoDia = p.rotina[diaSel].tipo === "treino" ? "treino" : "descanso";
 
@@ -579,14 +753,28 @@ function App() {
     { id: "treino",       icone: "🏋️", rotulo: "Treino"       },
     { id: "dieta",        icone: "🥗", rotulo: "Dieta"        },
     { id: "suplementos",  icone: "💊", rotulo: "Suplementos"  },
+    { id: "habitos",      icone: "📊", rotulo: "Hábitos"      },
     { id: "alertas",      icone: "⚠️", rotulo: "Alertas"      },
   ];
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col max-w-md mx-auto">
-
-      {/* Cabeçalho fixo */}
+      {<div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800 px-4 pt-4 pb-3 space-y-3">
+  
+  {/* Botões de Export/Import */}
+  <div className="flex items-center justify-end gap-2">
+    <button onClick={exportData} className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-medium text-white transition-all">
+      ⬇️ Exportar
+    </button>
+    abel className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-medium text-white transition-all cursor-pointer">
+      ⬆️ Importar
+      <input type="file" accept=".json" onChange={importData} className="hidden" />
+    </label>
+  </div>
+  
+  <AlternadorPerfil ativo={perfilAtivo} aoMudar={setPerfilAtivo} />}
       <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800 px-4 pt-4 pb-3 space-y-3">
+        
         <AlternadorPerfil ativo={perfilAtivo} aoMudar={setPerfilAtivo} />
 
         {/* Estatísticas do perfil */}
@@ -626,6 +814,7 @@ function App() {
         {abaAtiva === "treino"      && <LogTreino           perfil={perfilAtivo} dia={diaSel} />}
         {abaAtiva === "dieta"       && <VisualizacaoDieta   perfil={perfilAtivo} tipoDia={tipoDia} />}
         {abaAtiva === "suplementos" && <VisualizacaoSupl    perfil={perfilAtivo} />}
+        {abaAtiva === "habitos" && <HabitTracker perfil={perfilAtivo} />}
         {abaAtiva === "alertas"     && <VisualizacaoAlertas perfil={perfilAtivo} />}
       </div>
     </div>
